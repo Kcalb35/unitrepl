@@ -119,17 +119,30 @@ pub static PRESSURE_UNITS: UnitsType = &[
     ("psi", 6894.757293168),
     ("barye", 0.1), // 1 Ba = 0.1 Pa
 ];
+
+pub static VOLTAGE_UNITS: UnitsType = &[
+    ("V", 1.0),
+    ("kV", 1e3),
+    ("MV", 1e6),
+    ("GV", 1e9),
+    ("mV", 1e-3),
+    ("uV", 1e-6),
+    ("nV", 1e-9),
+    ("pV", 1e-12),
+];
+
 pub static UNIT_GROUP_MAP: LazyLock<HashMap<&'static str, UnitsType>> = LazyLock::new(|| {
     HashMap::from([
-        ("length", LENGTH_UNITS as UnitsType),
-        ("time", TIME_UNITS as UnitsType),
-        ("temperature", TEMP_UNITS as UnitsType),
-        ("current", CURRENT_UNITS as UnitsType),
-        ("mass", MASS_UNITS as UnitsType),
-        ("energy", ENERGY_UNITS as UnitsType),
-        ("charge", CHARGE_UNITS as UnitsType),
-        ("force", FORCE_UNITS as UnitsType),
-        ("pressure", PRESSURE_UNITS as UnitsType),
+        ("length", LENGTH_UNITS),
+        ("time", TIME_UNITS),
+        ("temperature", TEMP_UNITS),
+        ("current", CURRENT_UNITS),
+        ("mass", MASS_UNITS),
+        ("energy", ENERGY_UNITS),
+        ("charge", CHARGE_UNITS),
+        ("force", FORCE_UNITS),
+        ("pressure", PRESSURE_UNITS),
+        ("votage", VOLTAGE_UNITS),
     ])
 });
 
@@ -137,7 +150,6 @@ fn to_entry(name: &'static str, dim: Dim, factor_to_si: f64) -> (&'static str, U
     (
         name,
         UnitDef {
-            symbol: name,
             dim,
             factor: factor_to_si,
         },
@@ -196,6 +208,11 @@ pub static UNIT_DEF_MAP: LazyLock<HashMap<&'static str, UnitDef>> = LazyLock::ne
         PRESSURE_UNITS
             .iter()
             .map(|&(name, f)| to_entry(name, Dim::new(-1, 1, -2, 0, 0), f)),
+    );
+    map.extend(
+        VOLTAGE_UNITS
+            .iter()
+            .map(|&(name, f)| to_entry(name, Dim::new(2, 1, -3, 0, -1), f)),
     );
     map
 });

@@ -52,7 +52,7 @@ enum ReplCmd<'a> {
     Help,
     Exit,
     List(Option<&'a str>),
-    Expr(ConversionExpr<'a>),
+    Expr(ConversionExpr),
     Invalid(String),
     Empty,
 }
@@ -76,7 +76,7 @@ fn parse_repl(line: &str) -> ReplCmd<'_> {
         "exit" | "quit" => ReplCmd::Exit,
         _ => match parse_expr(line) {
             Ok(expr) => ReplCmd::Expr(expr),
-            Err(e) => ReplCmd::Invalid(e.to_string()),
+            Err(e) => ReplCmd::Invalid(e.format_repl()),
         },
     }
 }

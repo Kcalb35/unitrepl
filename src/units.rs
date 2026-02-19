@@ -10,7 +10,6 @@ pub struct Dim {
 }
 
 pub struct UnitDef {
-    pub symbol: &'static str,
     pub dim: Dim,
     pub factor: f64,
 }
@@ -103,32 +102,26 @@ impl Dim {
         }
     }
 
-    pub const fn mul(self, other: Dim) -> Dim {
-        Dim {
-            len: self.len + other.len,
-            mass: self.mass + other.mass,
-            time: self.time + other.time,
-            temp: self.temp + other.temp,
-            curr: self.curr + other.curr,
-        }
+    pub const fn mul(&mut self, other: Dim) {
+        self.len += other.len;
+        self.mass += other.mass;
+        self.time += other.time;
+        self.temp += other.temp;
+        self.curr += other.curr;
     }
 
-    pub const fn div(self, other: Dim) -> Dim {
-        Dim {
-            len: self.len - other.len,
-            mass: self.mass - other.mass,
-            time: self.time - other.time,
-            temp: self.temp - other.temp,
-            curr: self.curr - other.curr,
-        }
+    pub const fn div(&mut self, other: Dim) {
+        self.len -= other.len;
+        self.mass -= other.mass;
+        self.time -= other.time;
+        self.temp -= other.temp;
+        self.curr -= other.curr;
     }
-    pub const fn pow(self, k: i64) -> Dim {
-        Dim {
-            len: self.len * k,
-            mass: self.mass * k,
-            time: self.time * k,
-            temp: self.temp * k,
-            curr: self.curr * k,
-        }
+    pub const fn pow(&mut self, k: i64) {
+        self.len *= k;
+        self.mass *= k;
+        self.time *= k;
+        self.temp *= k;
+        self.curr *= k;
     }
 }

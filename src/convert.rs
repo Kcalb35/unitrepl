@@ -14,10 +14,12 @@ pub fn convert(expr: &ConversionExpr) -> String {
     let mut buffer = ryu::Buffer::new();
     let (from_factor, to_factor, symbol) = match (&expr.from, &expr.to) {
         (UnitTarget::Au, UnitTarget::Au) => unreachable!(),
-        (UnitTarget::Au, UnitTarget::Unit(to)) => (au_to_si(to.dim), to.factor, to.symbol),
-        (UnitTarget::Unit(from), UnitTarget::Au) => (from.factor, au_to_si(from.dim),"au"),
-        (UnitTarget::Unit(from), UnitTarget::Unit(to)) => (from.factor, to.factor, to.symbol),
+        (UnitTarget::Au, UnitTarget::Unit(to)) => (au_to_si(to.dim), to.factor, to.symbol.as_str()),
+        (UnitTarget::Unit(from), UnitTarget::Au) => (from.factor, au_to_si(from.dim), "au"),
+        (UnitTarget::Unit(from), UnitTarget::Unit(to)) => {
+            (from.factor, to.factor, to.symbol.as_str())
+        }
     };
     let value = expr.value * from_factor / to_factor;
-    format!("{} {}",buffer.format(value),symbol)
+    format!("{} {}", buffer.format(value), symbol)
 }
