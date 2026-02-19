@@ -1,4 +1,5 @@
-use crate::error::AppError;
+use crate::convert::convert;
+use crate::parse::parse_expr;
 use clap::Parser;
 #[derive(Debug, Parser)]
 #[command(
@@ -10,7 +11,13 @@ pub struct Cli {
     pub expr: Option<String>,
 }
 
-pub fn run_once(line: &str) -> Result<(), AppError> {
-    println!("Running once with line: {}", line);
-    Ok(())
+pub fn run_once(line: &str) {
+    match parse_expr(line) {
+        Ok(expr) => {
+            println!("{}", convert(&expr));
+        }
+        Err(e) => {
+            println!("{e}");
+        }
+    }
 }

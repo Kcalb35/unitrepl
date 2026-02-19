@@ -5,5 +5,7 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.57", features = ["derive"] }
+lazy_static = "1.5.0"
 rustyline = "17.0.2"
+ryu = "1.0.23"
 thiserror = "2.0.18"
