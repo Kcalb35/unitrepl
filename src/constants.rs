@@ -142,7 +142,7 @@ pub static UNIT_GROUP_MAP: LazyLock<HashMap<&'static str, UnitsType>> = LazyLock
         ("charge", CHARGE_UNITS),
         ("force", FORCE_UNITS),
         ("pressure", PRESSURE_UNITS),
-        ("votage", VOLTAGE_UNITS),
+        ("voltage", VOLTAGE_UNITS),
     ])
 });
 

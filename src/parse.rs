@@ -46,12 +46,14 @@ pub struct ParseError<'a> {
     pub kind: ParseErrorKind<'a>,
 }
 
+#[derive(Debug)]
 pub struct UnitExpr {
     pub symbol: String,
     pub dim: Dim,
     pub factor: f64,
 }
 
+#[derive(Debug)]
 pub enum UnitTarget {
     Au,
     Unit(UnitExpr),
@@ -310,6 +312,7 @@ impl<'a> Lexer<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct ConversionExpr {
     pub value: f64,
     pub from: UnitTarget,
@@ -345,4 +348,133 @@ pub fn parse_expr(line: &str) -> Result<ConversionExpr, ParseError<'_>> {
         return Err(ParseError::new(line, None, ParseErrorKind::AuToAu));
     }
     Ok(ConversionExpr { value, from, to })
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn assert_err<'a>(
+        line: &'a str,
+        expected_pos: Option<usize>,
+        check: impl FnOnce(&ParseErrorKind<'a>),
+    ) {
+        let err = parse_expr(line).expect_err("expected error");
+        assert_eq!(err.pos, expected_pos);
+        check(&err.kind);
+    }
+
+    #[test]
+    fn empty_line() {
+        assert_err("", None, |k| assert!(matches!(k, ParseErrorKind::Empty)));
+    }
+
+    #[test]
+    fn whitespace_only_is_invalid_number() {
+        assert_err("   \n", Some(4), |k| assert!(matches!(k, ParseErrorKind::InvalidNumber)));
+    }
+
+    #[test]
+    fn invalid_number_no_digits() {
+        assert_err("-", Some(1), |k| assert!(matches!(k, ParseErrorKind::InvalidNumber)));
+        assert_err("+", Some(1), |k| assert!(matches!(k, ParseErrorKind::InvalidNumber)));
+        assert_err(".", Some(1), |k| assert!(matches!(k, ParseErrorKind::InvalidNumber)));
+    }
+
+    #[test]
+    fn invalid_number_trailing_garbage() {
+        assert_err("1x km to m", Some(1), |k| assert!(matches!(k, ParseErrorKind::InvalidNumber)));
+        assert_err(
+            "1.2.3 km to m",
+            Some(3),
+            |k| assert!(matches!(k, ParseErrorKind::InvalidNumber)),
+        );
+    }
+
+    #[test]
+    fn invalid_exponent() {
+        assert_err("1e km to m", Some(2), |k| assert!(matches!(k, ParseErrorKind::InvalidExponent)));
+        assert_err(
+            "1e+ km to m",
+            Some(3),
+            |k| assert!(matches!(k, ParseErrorKind::InvalidExponent)),
+        );
+        assert_err(
+            "1e2x km to m",
+            Some(3),
+            |k| assert!(matches!(k, ParseErrorKind::InvalidExponent)),
+        );
+    }
+
+    #[test]
+    fn missing_to_keyword() {
+        assert_err("1 km m", Some(5), |k| assert!(matches!(k, ParseErrorKind::MissingTo)));
+        assert_err("1 km too m", Some(5), |k| assert!(matches!(k, ParseErrorKind::MissingTo)));
+    }
+
+    #[test]
+    fn unknown_unit() {
+        assert_err("1 xyz to m", Some(2), |k| match k {
+            ParseErrorKind::UnknownUnit(u) => assert_eq!(*u, "xyz"),
+            _ => panic!("unexpected kind: {k:?}"),
+        });
+    }
+
+    #[test]
+    fn unexpected_char_in_unit() {
+        assert_err("1 *m to m", Some(2), |k| match k {
+            ParseErrorKind::UnexpectedChar('*') => {}
+            _ => panic!("unexpected kind: {k:?}"),
+        });
+        assert_err("1 (m to m", Some(2), |k| match k {
+            ParseErrorKind::UnexpectedChar('(') => {}
+            _ => panic!("unexpected kind: {k:?}"),
+        });
+    }
+
+    #[test]
+    fn unexpected_number_in_unit() {
+        assert_err("1 2m to m", Some(2), |k| assert!(matches!(k, ParseErrorKind::UnexpectedNumber)));
+        assert_err("1 -m to m", Some(2), |k| assert!(matches!(k, ParseErrorKind::UnexpectedNumber)));
+    }
+
+    #[test]
+    fn trailing_input() {
+        assert_err("1 km to m foo", Some(10), |k| match k {
+            ParseErrorKind::BadSyntax(msg) => assert_eq!(*msg, "trailing input"),
+            _ => panic!("unexpected kind: {k:?}"),
+        });
+    }
+
+    #[test]
+    fn bad_syntax_expect_token() {
+        assert_err("1 ", Some(2), |k| match k {
+            ParseErrorKind::BadSyntax(msg) => assert_eq!(*msg, "expect token"),
+            _ => panic!("unexpected kind: {k:?}"),
+        });
+    }
+
+    #[test]
+    fn invalid_exponent_in_pow() {
+        assert_err("1 m^ to m", Some(5), |k| assert!(matches!(k, ParseErrorKind::InvalidNumber)));
+        assert_err("1 m^+ to m", Some(4), |k| assert!(matches!(k, ParseErrorKind::InvalidNumber)));
+    }
+
+    #[test]
+    fn au_to_au_not_supported() {
+        assert_err("1 au to au", None, |k| assert!(matches!(k, ParseErrorKind::AuToAu)));
+    }
+
+    #[test]
+    fn au_must_single_for_mul_div_pow() {
+        assert_err("1 au*m to m", Some(4), |k| assert!(matches!(k, ParseErrorKind::AuMustSingle)));
+        assert_err("1 m/au to m", Some(3), |k| assert!(matches!(k, ParseErrorKind::AuMustSingle)));
+        assert_err("1 au^2 to m", Some(6), |k| assert!(matches!(k, ParseErrorKind::AuMustSingle)));
+    }
+
+    #[test]
+    fn incompatible_dimension() {
+        assert_err("1 km to s", None, |k| assert!(matches!(k, ParseErrorKind::IncompatibleDim(_, _))));
+    }
 }
